@@ -11,52 +11,34 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
-        .status-outstanding {
-            color: #d97706; /* amber-600 */
-            background-color: #fef3c7; /* amber-100 */
-            padding: 2px 8px;
-            border-radius: 9999px;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-        .status-completed {
-            color: #166534; /* green-800 */
-            background-color: #dcfce7; /* green-100 */
-            padding: 2px 8px;
-            border-radius: 9999px;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-        .nav-btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .nav-btn.active {
-            background-color: #4f46e5; /* indigo-600 */
-            color: white;
-        }
-        .nav-btn:not(.active) {
-            color: #4b5563; /* gray-600 */
-            background-color: #e5e7eb; /* gray-200 */
-        }
-        .page {
-            display: none;
-        }
-        .page.active {
-            display: block;
-        }
-        #report-modal {
-            background-color: rgba(0,0,0,0.5);
-        }
+        .status-outstanding { color: #d97706; background-color: #fef3c7; padding: 2px 8px; border-radius: 9999px; font-weight: 500; font-size: 0.8rem; }
+        .status-completed { color: #166534; background-color: #dcfce7; padding: 2px 8px; border-radius: 9999px; font-weight: 500; font-size: 0.8rem; }
+        .nav-btn { padding: 8px 16px; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
+        .nav-btn.active { background-color: #4f46e5; color: white; }
+        .nav-btn:not(.active) { color: #4b5563; background-color: #e5e7eb; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .modal-backdrop { background-color: rgba(0,0,0,0.5); }
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <div id="app-container" class="container mx-auto p-4 md:p-8 max-w-7xl">
-        
+    <!-- Site Password Modal -->
+    <div id="site-password-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto">
+            <h3 class="text-xl font-semibold mb-4">Enter Access Code</h3>
+            <form id="site-password-form">
+                <label for="site-password" class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="site-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                <p id="site-password-error" class="text-red-500 text-sm mt-1 hidden">Incorrect password.</p>
+                <div class="mt-4 flex justify-end">
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Enter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-container" class="container mx-auto p-4 md:p-8 max-w-7xl hidden">
         <header class="mb-6">
             <h1 class="text-3xl font-bold text-gray-800">Reporting Portal</h1>
             <p class="text-gray-500">Overview of your team's daily and periodic reports.</p>
@@ -69,7 +51,6 @@
                 <button class="nav-btn" data-view="all">All Reports</button>
                 <button class="nav-btn" data-view="admin">Admin</button>
             </div>
-            <div id="user-info" class="text-sm text-gray-600"></div>
         </nav>
 
         <div id="loader" class="text-center py-10">
@@ -78,7 +59,6 @@
 
         <!-- Today's Reports Page -->
         <main id="view-today" class="page active">
-            <!-- ... content from previous version ... -->
             <div class="bg-red-700 text-white rounded-t-lg p-4 flex items-center justify-between shadow-md">
                 <h2 class="text-lg font-semibold">Visible Reports: <span id="visible-reports-count-today">0</span></h2>
             </div>
@@ -102,7 +82,6 @@
 
         <!-- Less-Frequent Reports Page -->
         <main id="view-less-frequent" class="page">
-             <!-- ... content from previous version ... -->
              <div class="bg-white shadow-md rounded-lg overflow-x-auto">
                 <table class="w-full text-sm text-left text-gray-600">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
@@ -121,7 +100,6 @@
 
         <!-- All Reports Page -->
         <main id="view-all" class="page">
-            <!-- ... content from previous version ... -->
             <div class="mb-4">
                 <input type="text" id="search-bar" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Search for any report...">
             </div>
@@ -140,29 +118,71 @@
         </main>
 
         <!-- Admin Page -->
-        <main id="view-admin" class="page">
-            <div class="flex justify-end mb-4">
-                <button id="create-report-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Create New Report</button>
-            </div>
-            <div class="bg-white shadow-md rounded-lg overflow-x-auto">
-                <table class="w-full text-sm text-left text-gray-600">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3">Report Name</th>
-                            <th scope="col" class="px-6 py-3">Frequency</th>
-                            <th scope="col" class="px-6 py-3 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reports-table-body-admin"></tbody>
-                </table>
-            </div>
-        </main>
+        <main id="view-admin" class="page space-y-8">
+            <!-- Report Management -->
+            <section>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Manage Reports</h2>
+                    <button id="create-report-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Create New Report</button>
+                </div>
+                <div class="bg-white shadow-md rounded-lg overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Report Name</th>
+                                <th scope="col" class="px-6 py-3">Frequency</th>
+                                <th scope="col" class="px-6 py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-table-body-admin"></tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <!-- Calendar Management -->
+            <section>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Periodic Calendar</h2>
+                    <button id="create-period-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add Period Date</button>
+                </div>
+                <div class="bg-white shadow-md rounded-lg overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Period Name</th>
+                                <th scope="col" class="px-6 py-3">Start Date</th>
+                                <th scope="col" class="px-6 py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendar-table-body-admin"></tbody>
+                    </table>
+                </div>
+            </section>
 
-        <div id="no-reports-initial" class="text-center py-10 hidden"><p class="text-gray-500">No reports found in the database. Initializing with sample data...</p></div>
+             <!-- Team Management -->
+            <section>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Team Members</h2>
+                    <button id="create-member-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add Team Member</button>
+                </div>
+                <div class="bg-white shadow-md rounded-lg overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Member Name</th>
+                                <th scope="col" class="px-6 py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team-table-body-admin"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+        <div id="no-reports-initial" class="text-center py-10 hidden"><p class="text-gray-500">No data found. Initializing with sample data...</p></div>
     </div>
 
-    <!-- Report Creation/Edit Modal -->
-    <div id="report-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
+    <!-- Modals -->
+    <div id="report-modal" class="fixed inset-0 z-50 items-center justify-center hidden modal-backdrop">
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-auto mt-20">
             <h3 id="modal-title" class="text-xl font-semibold mb-4">Create Report</h3>
             <form id="report-form">
@@ -174,9 +194,7 @@
                     </div>
                      <div>
                         <label for="report-assignedTo" class="block text-sm font-medium text-gray-700">Assigned To</label>
-                        <select id="report-assignedTo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
-                            <!-- Options populated by JS -->
-                        </select>
+                        <select id="report-assignedTo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></select>
                     </div>
                 </div>
                 <div class="mt-4">
@@ -198,18 +216,81 @@
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end space-x-3">
-                    <button type="button" id="cancel-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="button" class="cancel-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
                     <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save Report</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <div id="period-modal" class="fixed inset-0 z-50 items-center justify-center hidden modal-backdrop">
+         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto mt-20">
+            <h3 class="text-xl font-semibold mb-4">Add Period Date</h3>
+            <form id="period-form">
+                <input type="hidden" id="period-id">
+                <div>
+                    <label for="period-name" class="block text-sm font-medium text-gray-700">Period Name (e.g., P09 2025)</label>
+                    <input type="text" id="period-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                </div>
+                <div class="mt-4">
+                    <label for="period-date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input type="date" id="period-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" class="cancel-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save Period</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="member-modal" class="fixed inset-0 z-50 items-center justify-center hidden modal-backdrop">
+         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto mt-20">
+            <h3 class="text-xl font-semibold mb-4">Add Team Member</h3>
+            <form id="member-form">
+                <input type="hidden" id="member-id">
+                <div>
+                    <label for="member-name" class="block text-sm font-medium text-gray-700">Member Name</label>
+                    <input type="text" id="member-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" class="cancel-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-password-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto">
+            <h3 class="text-xl font-semibold mb-4">Admin Access Required</h3>
+            <form id="admin-password-form">
+                <label for="admin-password" class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="admin-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                <p id="admin-password-error" class="text-red-500 text-sm mt-1 hidden">Incorrect password.</p>
+                <div class="mt-4 flex justify-end space-x-3">
+                    <button type="button" id="cancel-admin-login-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Enter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+     <div id="confirm-modal" class="fixed inset-0 z-50 items-center justify-center hidden modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto mt-20">
+            <h3 class="text-lg font-semibold mb-2">Are you sure?</h3>
+            <p id="confirm-modal-text" class="text-gray-600 mb-6">This action cannot be undone.</p>
+            <div class="flex justify-end space-x-3">
+                <button id="confirm-cancel-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+                <button id="confirm-delete-btn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Delete</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, onSnapshot, updateDoc, serverTimestamp, getDocs, writeBatch, addDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, onSnapshot, updateDoc, serverTimestamp, getDocs, writeBatch, addDoc, deleteDoc, setDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -225,77 +306,96 @@
 
         // --- App State ---
         let db, auth, userId;
-        let reportsCollectionRef;
-        let allReports = [];
+        let reportsCollectionRef, calendarCollectionRef, teamCollectionRef;
+        let allReports = [], allPeriods = [], allTeamMembers = [];
         let currentView = 'today';
+        let isAdminUnlocked = false;
 
-        // --- Team Members for Dropdown ---
-        const teamMembers = [
-            'andrew.mackay',
-            'racheal.omodanisi',
-            'team.lead',
-            'jane.doe',
-            'john.smith'
-        ];
-
-        // --- Periodic Calendar ---
-        const periodicCalendar = [
+        // --- Initial Seed Data (if database is empty) ---
+        const initialTeamMembers = [ { name: 'Keiaan McLean' }, { name: 'Dylan Jenson' } ];
+        const initialPeriodicCalendar = [
             { period: "P09 2025", startDate: new Date("2025-09-04T00:00:00") },
             { period: "P10 2025", startDate: new Date("2025-10-02T00:00:00") },
-            { period: "P11 2025", startDate: new Date("2025-10-30T00:00:00") },
-            { period: "P12 2025", startDate: new Date("2025-11-27T00:00:00") },
         ];
-        
-        // --- Sample Data ---
-        const sampleReports = [
-            { code: 'W006399', name: 'W006399 - CVS Account Listings (Cut Off 12pm)', assignedTo: 'andrew.mackay', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Daily list of CVS accounts.' },
-            { code: 'W006401', name: 'W006401 - CVS OWOs (Cut Off 12pm)', assignedTo: 'andrew.mackay', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Daily CVS OWO report.' },
-            { code: 'W006469', name: 'Amazon Fresh KPIs', assignedTo: 'racheal.omodanisi', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'KPIs for Amazon Fresh project.' },
-            { code: 'W006488', name: 'W006488_D_Ops_MultiClient_Engineer_WO_BreakDown_Granular (Due 8am)', assignedTo: 'andrew.mackay', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Engineer work order breakdown.' },
-            { code: 'M001', name: 'Monthly Performance Review', assignedTo: 'team.lead', status: 'Outstanding', frequency: 'periodic', lastUpdated: null, description: 'Review of team performance for the period.' },
-            { code: 'W001', name: 'Weekly Team Sync Report', assignedTo: 'racheal.omodanisi', status: 'Outstanding', frequency: 'weekly', lastUpdated: null, description: 'Summary of weekly team sync meeting.' }
+        const initialReports = [
+            // Daily Reports
+            { code: 'D01', name: '1pm Mismatch', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Shows difference between Opera reported Contractor compared to Verisae.' },
+            { code: 'D02', name: '1pm Vision', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Shows instances where agents have closed work orders down as being back online but the room is still offline in the Opera system.' },
+            { code: 'D03', name: '1pm Duplicates', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Provides a list of work orders raised which are potential duplicates of one another.' },
+            { code: 'D04', name: '4pm Mismatch', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Shows difference between Opera reported Contractor compared to Verisae.' },
+            { code: 'D05', name: '4pm Vision', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Shows instances where agents have closed work orders down as being back online but the room is still offline in the Opera system.' },
+            { code: 'D06', name: '4pm Duplicates', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Provides a list of work orders raised which are potential duplicates of one another.' },
+            { code: 'D07', name: 'Bed Bugs Checks - Last 30 days', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Allows the agents to check if there has been a bed bug job raised in the last 30 days for a specific room to avoid duplicate logging and/or payment.' },
+            { code: 'D08', name: 'High Logging Breach Tracking', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Report which we email over to Alan Englefield to confirm any hotels whom have logged 25% or more of their room stock as Fix Fast work orders in a 3 day block.' },
+            { code: 'D09', name: 'Project Albert', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Shows what jobs have been raised for recently opened hotels.' },
+            { code: 'D10', name: 'W006422_D_Ops_Travelodge_Offline_Productivity_Report', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Shows work order tagging activity for offline rooms performed by agents.' },
+            { code: 'D11', name: 'W006478_D_Ops_Travelodge_Cancellation_Reasons', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'A report which shows cancelled work orders and who had cancelled them.' },
+            { code: 'D12', name: 'Travelodge PPM report', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Service Review' },
+            { code: 'D13', name: 'NTE Values Report', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'daily', lastUpdated: null, description: 'Shows the days spend for certain contractors required on a daily basis by Travelodge.' },
+            // Weekly Reports
+            { code: 'W01', name: 'KPI performance tracking', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'weekly', lastUpdated: null, description: 'Telephony Report.' },
+            { code: 'W02', name: 'W006425_W_Ops_Travelodge_Weekly_Productivity_Report', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'weekly', lastUpdated: null, description: 'Shows work order scheduling statistics for planning.' },
+            // Periodic (Monthly) Reports
+            { code: 'P01', name: 'W006429_M_Ops_Travelodge_Monthly_PPM_Report', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'periodic', lastUpdated: null, description: 'Service review' },
+            { code: 'P02', name: 'W006432_M_Ops_Travelodge_Service_Review', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'periodic', lastUpdated: null, description: 'Service review' },
+            { code: 'P03', name: 'W006433_M_Ops_Travelodge_Closures_Report', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'periodic', lastUpdated: null, description: 'Service Review' },
+            { code: 'P04', name: 'Spend Report', assignedTo: 'Keiaan McLean', status: 'Outstanding', frequency: 'periodic', lastUpdated: null, description: 'Service Review' },
         ];
 
         // --- DOM Elements ---
+        const appContainer = document.getElementById('app-container');
         const loader = document.getElementById('loader');
-        const views = {
-            today: document.getElementById('view-today'),
-            'less-frequent': document.getElementById('view-less-frequent'),
-            all: document.getElementById('view-all'),
-            admin: document.getElementById('view-admin')
-        };
+        const views = { today: document.getElementById('view-today'), 'less-frequent': document.getElementById('view-less-frequent'), all: document.getElementById('view-all'), admin: document.getElementById('view-admin') };
         const navButtons = document.querySelectorAll('.nav-btn');
         const searchBar = document.getElementById('search-bar');
+        
+        // Modals
         const reportModal = document.getElementById('report-modal');
+        const periodModal = document.getElementById('period-modal');
+        const memberModal = document.getElementById('member-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+
+        // Forms
         const reportForm = document.getElementById('report-form');
-        const cancelBtn = document.getElementById('cancel-btn');
+        const periodForm = document.getElementById('period-form');
+        const memberForm = document.getElementById('member-form');
+
+        // Buttons
         const createReportBtn = document.getElementById('create-report-btn');
+        const createPeriodBtn = document.getElementById('create-period-btn');
+        const createMemberBtn = document.getElementById('create-member-btn');
 
         // --- Utility Functions ---
-        // ... (formatDate, getStartOfWeek, getCurrentPeriod) ...
         function formatDate(timestamp) {
             if (!timestamp) return 'N/A';
-            return new Date(timestamp.seconds * 1000).toLocaleString();
+            const date = new Date(timestamp.seconds * 1000);
+            return date.toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
         }
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+
         function getStartOfWeek(date) {
             const dt = new Date(date);
             const day = dt.getDay();
             const diff = dt.getDate() - day + (day === 0 ? -6 : 1);
-            return new Date(dt.setDate(diff));
+            dt.setHours(0,0,0,0);
+            dt.setDate(diff);
+            return dt;
         }
-        function getCurrentPeriod(date) {
+
+        function getCurrentPeriod(date, periods) {
             let current = null;
-            for (let i = periodicCalendar.length - 1; i >= 0; i--) {
-                if (date >= periodicCalendar[i].startDate) {
-                    current = periodicCalendar[i];
+            const sortedPeriods = [...periods].sort((a,b) => b.startDate.seconds - a.startDate.seconds);
+            for (const period of sortedPeriods) {
+                const startDate = new Date(period.startDate.seconds * 1000);
+                startDate.setHours(0,0,0,0);
+                if (date >= startDate) {
+                    current = { ...period, startDate };
                     break;
                 }
             }
             return current;
         }
-
 
         // --- Core Application Logic ---
         async function initializeAppAndAuth() {
@@ -307,9 +407,13 @@
                 onAuthStateChanged(auth, user => {
                     if (user) {
                         userId = user.uid;
-                        document.getElementById('user-info').textContent = `User: ${userId.substring(0,8)}...`;
-                        reportsCollectionRef = collection(db, `artifacts/${appId}/public/data/reports`);
-                        setupReportListener();
+                        // Define collection references
+                        const publicDataPath = `artifacts/${appId}/public/data`;
+                        reportsCollectionRef = collection(db, `${publicDataPath}/reports`);
+                        calendarCollectionRef = collection(db, `${publicDataPath}/periodicCalendar`);
+                        teamCollectionRef = collection(db, `${publicDataPath}/teamMembers`);
+                        
+                        setupDataListeners();
                     }
                 });
 
@@ -321,28 +425,25 @@
             }
         }
 
-        async function setupReportListener() {
-            const initialSnapshot = await getDocs(reportsCollectionRef);
-            if (initialSnapshot.empty) {
-                document.getElementById('no-reports-initial').classList.remove('hidden');
-                await seedSampleData();
-                document.getElementById('no-reports-initial').classList.add('hidden');
-            }
+        async function setupDataListeners() {
+            await checkAndSeedInitialData();
             
-            onSnapshot(reportsCollectionRef, async (snapshot) => {
+            onSnapshot(query(reportsCollectionRef), async (snapshot) => {
                 const reportsFromDB = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
                 await checkAndResetReports(reportsFromDB);
 
                 const finalSnapshot = await getDocs(reportsCollectionRef);
                 allReports = finalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
                 renderCurrentView();
-                
                 loader.style.display = 'none';
-            }, (error) => {
-                console.error("Error fetching reports: ", error);
-                loader.textContent = "Could not fetch reports.";
+            });
+            onSnapshot(query(calendarCollectionRef), (snapshot) => {
+                allPeriods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (currentView === 'admin') renderAdminPage();
+            });
+             onSnapshot(query(teamCollectionRef), (snapshot) => {
+                allTeamMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                 if (currentView === 'admin') renderAdminPage();
             });
         }
         
@@ -364,28 +465,28 @@
 
         // --- Page Rendering Functions ---
         function renderTodaysReports() {
-            // ... same as previous version ...
             const tableBody = document.getElementById('reports-table-body-today');
             tableBody.innerHTML = '';
-            const noReportsDiv = document.getElementById('no-reports-today');
             
-            const periodicDueToday = getCurrentPeriod(today)?.startDate.getTime() === today.getTime();
+            const currentPeriod = getCurrentPeriod(today, allPeriods);
+            const periodicDueToday = currentPeriod ? currentPeriod.startDate.getTime() === today.getTime() : false;
             const isMonday = today.getDay() === 1;
 
-            const todaysReports = allReports.filter(r => {
-                if (r.frequency === 'daily') return true;
-                if (r.frequency === 'weekly' && isMonday) return true;
-                if (r.frequency === 'periodic' && periodicDueToday) return true;
-                return false;
-            });
+            const todaysReports = allReports.filter(r => 
+                (r.frequency === 'daily') || 
+                (r.frequency === 'weekly' && isMonday) || 
+                (r.frequency === 'periodic' && periodicDueToday)
+            );
 
             document.getElementById('visible-reports-count-today').textContent = todaysReports.length;
-            noReportsDiv.classList.toggle('hidden', todaysReports.length > 0);
+            document.getElementById('no-reports-today').classList.toggle('hidden', todaysReports.length > 0);
 
             todaysReports.sort((a,b) => a.code.localeCompare(b.code)).forEach(report => {
-                 const tr = document.createElement('tr');
+                const tr = document.createElement('tr');
                 tr.className = 'bg-white border-b hover:bg-gray-50';
                 const statusClass = report.status === 'Outstanding' ? 'status-outstanding' : 'status-completed';
+                const isCompletedToday = report.status === 'Completed' && new Date(report.lastUpdated?.seconds * 1000) >= today;
+
                 tr.innerHTML = `
                     <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${report.code}</td>
                     <td class="px-6 py-4">${report.name}</td>
@@ -393,7 +494,7 @@
                     <td class="px-6 py-4"><span class="${statusClass}">${report.status}</span></td>
                     <td class="px-6 py-4">${formatDate(report.lastUpdated)}</td>
                     <td class="px-6 py-4 text-center">
-                        <button data-id="${report.id}" class="action-button font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-sm px-4 py-2 disabled:bg-gray-400" ${report.status === 'Completed' ? 'disabled' : ''}>
+                        <button data-id="${report.id}" class="action-button font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-sm px-4 py-2 disabled:bg-gray-400" ${isCompletedToday ? 'disabled' : ''}>
                             Complete
                         </button>
                     </td>
@@ -404,13 +505,12 @@
         }
 
         function renderLessFrequentReports() {
-            // ... same as previous version ...
              const tableBody = document.getElementById('reports-table-body-less-frequent');
              tableBody.innerHTML = '';
              const reports = allReports.filter(r => r.frequency === 'weekly' || r.frequency === 'periodic');
              
              const startOfWeek = getStartOfWeek(today);
-             const currentPeriod = getCurrentPeriod(today);
+             const currentPeriod = getCurrentPeriod(today, allPeriods);
 
              reports.sort((a,b) => a.frequency.localeCompare(b.frequency) || a.name.localeCompare(b.name)).forEach(report => {
                 let isCompleteForPeriod = false;
@@ -444,7 +544,6 @@
         }
 
         function renderAllReports() {
-            // ... same as previous version ...
             const tableBody = document.getElementById('reports-table-body-all');
             tableBody.innerHTML = '';
             const searchTerm = searchBar.value.toLowerCase();
@@ -463,6 +562,11 @@
         }
         
         function renderAdminPage() {
+            renderAdminReports();
+            renderAdminCalendar();
+            renderAdminTeam();
+        }
+        function renderAdminReports() {
             const tableBody = document.getElementById('reports-table-body-admin');
             tableBody.innerHTML = '';
             allReports.sort((a,b) => a.name.localeCompare(b.name)).forEach(report => {
@@ -472,27 +576,61 @@
                     <td class="px-6 py-4 font-medium text-gray-900">${report.name}</td>
                     <td class="px-6 py-4 capitalize">${report.frequency}</td>
                     <td class="px-6 py-4 text-center space-x-2">
-                        <button data-id="${report.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button>
-                        <button data-id="${report.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button>
+                        <button data-id="${report.id}" class="edit-report-btn text-indigo-600 hover:text-indigo-900">Edit</button>
+                        <button data-id="${report.id}" class="delete-report-btn text-red-600 hover:text-red-900">Delete</button>
                     </td>
                 `;
                 tableBody.appendChild(tr);
             });
-            addAdminActionListeners();
+            addAdminReportActionListeners();
+        }
+         function renderAdminCalendar() {
+            const tableBody = document.getElementById('calendar-table-body-admin');
+            tableBody.innerHTML = '';
+            allPeriods.sort((a,b) => a.startDate.seconds - b.startDate.seconds).forEach(period => {
+                const tr = document.createElement('tr');
+                tr.className = 'bg-white border-b hover:bg-gray-50';
+                const d = new Date(period.startDate.seconds * 1000);
+                const dateString = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-900">${period.period}</td>
+                    <td class="px-6 py-4">${dateString}</td>
+                    <td class="px-6 py-4 text-center space-x-2">
+                        <button data-id="${period.id}" class="delete-period-btn text-red-600 hover:text-red-900">Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+            addAdminCalendarActionListeners();
+        }
+         function renderAdminTeam() {
+            const tableBody = document.getElementById('team-table-body-admin');
+            tableBody.innerHTML = '';
+            allTeamMembers.sort((a,b) => a.name.localeCompare(b.name)).forEach(member => {
+                const tr = document.createElement('tr');
+                tr.className = 'bg-white border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-900">${member.name}</td>
+                    <td class="px-6 py-4 text-center space-x-2">
+                        <button data-id="${member.id}" class="delete-member-btn text-red-600 hover:text-red-900">Delete</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+            addAdminTeamActionListeners();
         }
         
-        // --- Report Management Functions (Create, Edit, Delete) ---
+        // --- Modal & Form Management ---
         function openReportModal(report = null) {
             reportForm.reset();
             const modalTitle = document.getElementById('modal-title');
             
-            // Populate assignedTo dropdown
             const assignedToDropdown = document.getElementById('report-assignedTo');
             assignedToDropdown.innerHTML = '';
-            teamMembers.forEach(member => {
+            allTeamMembers.sort((a,b) => a.name.localeCompare(b.name)).forEach(member => {
                 const option = document.createElement('option');
-                option.value = member;
-                option.textContent = member;
+                option.value = member.name;
+                option.textContent = member.name;
                 assignedToDropdown.appendChild(option);
             });
 
@@ -510,56 +648,101 @@
             }
             reportModal.style.display = 'flex';
         }
-
-        function closeReportModal() {
-            reportModal.style.display = 'none';
+        
+        function openPeriodModal() {
+            periodForm.reset();
+            periodModal.style.display = 'flex';
+        }
+        function openMemberModal() {
+            memberForm.reset();
+            memberModal.style.display = 'flex';
+        }
+        function closeAllModals() {
+            [reportModal, periodModal, memberModal, confirmModal].forEach(m => m.style.display = 'none');
         }
 
+        // --- CRUD Functions ---
         async function saveReport(event) {
             event.preventDefault();
             const reportId = document.getElementById('report-id').value;
             const reportData = {
-                code: document.getElementById('report-code').value,
-                name: document.getElementById('report-name').value,
-                assignedTo: document.getElementById('report-assignedTo').value,
-                description: document.getElementById('report-description').value,
+                code: document.getElementById('report-code').value, name: document.getElementById('report-name').value,
+                assignedTo: document.getElementById('report-assignedTo').value, description: document.getElementById('report-description').value,
                 frequency: document.getElementById('report-frequency').value,
             };
 
             try {
                 if (reportId) {
-                    // Update existing report
-                    const reportRef = doc(reportsCollectionRef, reportId);
-                    await updateDoc(reportRef, reportData);
+                    await updateDoc(doc(reportsCollectionRef, reportId), reportData);
                 } else {
-                    // Create new report
-                    reportData.status = 'Outstanding';
-                    reportData.lastUpdated = null;
+                    reportData.status = 'Outstanding'; reportData.lastUpdated = null;
                     await addDoc(reportsCollectionRef, reportData);
                 }
-                closeReportModal();
+                closeAllModals();
+            } catch (error) { console.error("Error saving report: ", error); }
+        }
+
+        async function savePeriod(event) {
+            event.preventDefault();
+            const dateValue = document.getElementById('period-date').value;
+            const periodData = {
+                period: document.getElementById('period-name').value,
+                startDate: new Date(dateValue + 'T00:00:00') // Ensure it's start of day
+            };
+            try {
+                await addDoc(calendarCollectionRef, periodData);
+                closeAllModals();
+            } catch (error) { console.error("Error saving period: ", error); }
+        }
+        
+        async function saveMember(event) {
+            event.preventDefault();
+            const memberData = { name: document.getElementById('member-name').value };
+            try {
+                await addDoc(teamCollectionRef, memberData);
+                closeAllModals();
+            } catch(error) { console.error("Error saving member: ", error); }
+        }
+
+        function confirmDeletion(text, callback) {
+            document.getElementById('confirm-modal-text').textContent = text;
+            confirmModal.style.display = 'flex';
+            
+            const deleteBtn = document.getElementById('confirm-delete-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+            const handleDelete = () => {
+                callback();
+                closeAllModals();
+                cleanup();
+            };
+            const handleCancel = () => {
+                closeAllModals();
+                cleanup();
+            };
+            const cleanup = () => {
+                deleteBtn.removeEventListener('click', handleDelete);
+                cancelBtn.removeEventListener('click', handleCancel);
+            }
+
+            deleteBtn.addEventListener('click', handleDelete);
+            cancelBtn.addEventListener('click', handleCancel);
+        }
+
+        async function deleteItem(collectionRef, itemId) {
+            try {
+                await deleteDoc(doc(collectionRef, itemId));
             } catch (error) {
-                console.error("Error saving report: ", error);
+                console.error("Error deleting item: ", error);
             }
         }
-
-        async function deleteReport(reportId) {
-            if (confirm('Are you sure you want to delete this report?')) {
-                try {
-                    await deleteDoc(doc(reportsCollectionRef, reportId));
-                } catch (error) {
-                    console.error("Error deleting report: ", error);
-                }
-            }
-        }
-
+        
         // --- Data & State Management ---
         async function checkAndResetReports(reports) {
-            // ... same as previous version ...
             const batch = writeBatch(db);
             let updatesMade = false;
             const startOfWeek = getStartOfWeek(today);
-            const currentPeriod = getCurrentPeriod(today);
+            const currentPeriod = getCurrentPeriod(today, allPeriods);
 
             reports.forEach(report => {
                 if (report.status === 'Completed' && report.lastUpdated) {
@@ -579,13 +762,27 @@
             if (updatesMade) await batch.commit();
         }
 
-        async function seedSampleData() {
-            const batch = writeBatch(db);
-            sampleReports.forEach(report => {
-                const newReportRef = doc(reportsCollectionRef);
-                batch.set(newReportRef, report);
-            });
-            await batch.commit();
+        async function checkAndSeedInitialData() {
+            const collections = [
+                { ref: reportsCollectionRef, data: initialReports },
+                { ref: calendarCollectionRef, data: initialPeriodicCalendar },
+                { ref: teamCollectionRef, data: initialTeamMembers }
+            ];
+            const initialCheck = await getDocs(reportsCollectionRef); // Check one to see if seeding is needed
+            if (initialCheck.empty) {
+                document.getElementById('no-reports-initial').classList.remove('hidden');
+                const batch = writeBatch(db);
+                for (const col of collections) {
+                    const snapshot = await getDocs(col.ref);
+                    if (snapshot.empty) {
+                        col.data.forEach(item => {
+                            batch.set(doc(col.ref), item);
+                        });
+                    }
+                }
+                await batch.commit();
+                document.getElementById('no-reports-initial').classList.add('hidden');
+            }
         }
         
         async function handleCompleteAction(event) {
@@ -604,36 +801,70 @@
                 button.addEventListener('click', handleCompleteAction);
             });
         }
-        
-        function addAdminActionListeners() {
-            document.querySelectorAll('.edit-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const reportId = e.target.dataset.id;
-                    const report = allReports.find(r => r.id === reportId);
-                    openReportModal(report);
-                });
-            });
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    deleteReport(e.target.dataset.id);
-                });
-            });
+        function addAdminReportActionListeners() {
+            document.querySelectorAll('.edit-report-btn').forEach(b => b.addEventListener('click', e => openReportModal(allReports.find(r => r.id === e.target.dataset.id))));
+            document.querySelectorAll('.delete-report-btn').forEach(b => b.addEventListener('click', e => confirmDeletion('This will permanently delete the report.', () => deleteItem(reportsCollectionRef, e.target.dataset.id))));
         }
-        
+        function addAdminCalendarActionListeners() {
+            document.querySelectorAll('.delete-period-btn').forEach(b => b.addEventListener('click', e => confirmDeletion('This will permanently delete the period date.', () => deleteItem(calendarCollectionRef, e.target.dataset.id))));
+        }
+        function addAdminTeamActionListeners() {
+            document.querySelectorAll('.delete-member-btn').forEach(b => b.addEventListener('click', e => confirmDeletion('This will permanently delete the team member.', () => deleteItem(teamCollectionRef, e.target.dataset.id))));
+        }
+
+        // Main Navigation
         navButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                currentView = e.target.dataset.view;
+                const view = e.target.dataset.view;
+                if (view === 'admin' && !isAdminUnlocked) {
+                    document.getElementById('admin-password-modal').style.display = 'flex';
+                    return;
+                }
+                currentView = view;
                 renderCurrentView();
             });
         });
         
+        // Modal & Form Listeners
         searchBar.addEventListener('input', renderAllReports);
         createReportBtn.addEventListener('click', () => openReportModal());
-        cancelBtn.addEventListener('click', closeReportModal);
+        createPeriodBtn.addEventListener('click', openPeriodModal);
+        createMemberBtn.addEventListener('click', openMemberModal);
+        document.querySelectorAll('.cancel-btn').forEach(b => b.addEventListener('click', closeAllModals));
         reportForm.addEventListener('submit', saveReport);
+        periodForm.addEventListener('submit', savePeriod);
+        memberForm.addEventListener('submit', saveMember);
 
-        // --- Start the app ---
-        initializeAppAndAuth();
+        // Password Handling
+        document.getElementById('site-password-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const password = document.getElementById('site-password').value;
+            if (password === 'Arcus11102022!') {
+                document.getElementById('site-password-modal').style.display = 'none';
+                appContainer.classList.remove('hidden');
+                initializeAppAndAuth();
+            } else {
+                document.getElementById('site-password-error').classList.remove('hidden');
+            }
+        });
+        document.getElementById('admin-password-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const password = document.getElementById('admin-password').value;
+            if (password === 'Travelodge11102022!') {
+                isAdminUnlocked = true;
+                document.getElementById('admin-password-modal').style.display = 'none';
+                currentView = 'admin';
+                renderCurrentView();
+            } else {
+                document.getElementById('admin-password-error').classList.remove('hidden');
+            }
+        });
+        document.getElementById('cancel-admin-login-btn').addEventListener('click', () => {
+            document.getElementById('admin-password-modal').style.display = 'none';
+        });
+
     </script>
 </body>
 </html>
+
+
